@@ -23,6 +23,8 @@ How to work:
 - If web_search returns nothing, try wikipedia_search, a shorter query, or visit a likely URL directly.
 - Open pages rather than trusting search snippets. Prefer authoritative sources.
 - As soon as you have enough evidence, stop and answer. Do not re-check information you already confirmed.
+- If an approach fails twice (errors, empty results), switch approaches or answer with the best evidence you have. Do not spend many steps on a side issue.
+- Do not install software. Use only the tools and libraries already available.
 
 When you answer (with no tool call), give ONLY the final answer:
 - No explanation, no full sentence, no "The answer is".
@@ -62,6 +64,7 @@ agent_llm = _models[0].bind_tools(ALL_TOOLS).with_fallbacks(
 # Formatting model: no tools; cheapest first since the task is easy.
 format_llm = _models[-1].with_fallbacks(_models[:-1])
 
+answer_llm = _models[0].with_fallbacks(_models[1:])
 
 def text_of(message) -> str:
     """Gemini may return content as a string or as a list of parts; return plain text."""
@@ -136,15 +139,32 @@ class GaiaAgent:
         task = question
         if file_path:
             task += f"\n\nThe attached file is saved locally at: {file_path}"
+        inputs = {"messages": [HumanMessage(content=task)], "question": question, "answer": ""}
+        state = None
         try:
-            result = graph.invoke(
-                {"messages": [HumanMessage(content=task)], "question": question, "answer": ""},
-                config={"recursion_limit": 25},  # ~12 tool rounds, then stop
-            )
-            return result["answer"]
+            # stream() yields the state after every step, so we keep the latest one
+            for state in graph.stream(inputs, config={"recursion_limit": 25}, stream_mode="values"):
+                pass
+            return state["answer"]
         except GraphRecursionError:
-            print("  (step limit reached)")
-            return ""
+            print("  (step limit reached; forcing a best-guess answer)")
+            return self._best_guess(question, state)
         except Exception as e:
             print(f"  (agent error: {e})")
+            return ""
+
+    def _best_guess(self, question: str, state) -> str:
+        if not state:
+            return ""
+        transcript = "\n\n".join(text_of(m)[:3000] for m in state["messages"][-12:] if text_of(m))
+        prompt = (
+            "You ran out of research steps. Based ONLY on the evidence gathered below, give your best "
+            "final answer to the question. Output ONLY the answer, formatted as the question requires. "
+            "If the evidence contains no answer at all, output nothing.\n\n"
+            f"QUESTION:\n{question}\n\nEVIDENCE:\n{transcript}"
+        )
+        try:
+            return clean_answer(text_of(answer_llm.invoke(prompt)))
+        except Exception as e:
+            print(f"  (best-guess failed: {e})")
             return ""
