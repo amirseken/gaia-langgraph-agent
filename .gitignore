@@ -1,0 +1,4 @@
+.env
+.venv/
+gaia_files/
+__pycache__/
