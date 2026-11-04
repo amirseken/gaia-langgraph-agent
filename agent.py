@@ -165,8 +165,8 @@ class GaiaAgent:
         config = self._config(task_id)
         state = None
         try:
-            for state in graph.stream(inputs, config=config, stream_mode="values"):
-                pass
+            for step_state in graph.stream(inputs, config=config, stream_mode="values"):
+                state = step_state  # keep the latest state, also needed if the step limit is hit
             return state["answer"]
         except GraphRecursionError:
             print("  (step limit reached; forcing a best-guess answer)")

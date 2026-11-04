@@ -52,7 +52,7 @@ class AnswerResponse(BaseModel):
 @app.get("/hello")
 def hello():
     return {"message": "Hello!"}
-    
+
 @app.get("/health")
 def health() -> dict:
     """Lightweight check that the service is running (used by Docker and hosting platforms)."""

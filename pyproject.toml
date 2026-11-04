@@ -1,0 +1,18 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # style errors and warnings (pycodestyle)
+    "F",        # real bugs: undefined names, unused imports (Pyflakes)
+    "I",        # sorted imports
+    "B",        # likely bugs (flake8-bugbear)
+    "UP",       # modern Python syntax
+    "RUF",      # Ruff's own useful checks
+]
+ignore = ["E501"]   # long lines: let the formatter handle these
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's Depends/File/Form in defaults are the framework's intended usage, not a bug
+extend-immutable-calls = ["fastapi.Depends", "fastapi.File", "fastapi.Form", "fastapi.Query"]

@@ -58,6 +58,7 @@ def _gemini_generate(contents) -> str:
 def web_search(query: str) -> str:
     """Search the web and return the top results with titles, URLs and snippets."""
     import time
+
     from ddgs import DDGS
     last_error = None
     for attempt in range(3):
@@ -100,7 +101,7 @@ def visit_webpage(url: str) -> str:
     try:
         response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=30)
         response.raise_for_status()
-    except Exception as e:
+    except requests.RequestException as e:
         return f"Error fetching the webpage: {e}"
     soup = BeautifulSoup(response.text, "html.parser")
     for tag in soup(["script", "style", "nav", "header", "footer", "aside", "noscript"]):
@@ -153,7 +154,7 @@ def run_python(code: str) -> str:
     import subprocess
     import sys
     try:
-        r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=60)
+        r = subprocess.run([sys.executable, "-c", code], capture_output=True, check=False,text=True, timeout=60)
     except subprocess.TimeoutExpired:
         return "Error: code timed out after 60 seconds."
     output = (r.stdout + (f"\nSTDERR:\n{r.stderr}" if r.stderr else "")).strip()
