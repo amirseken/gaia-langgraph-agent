@@ -7,7 +7,7 @@ from agent import clean_answer, text_of
 @pytest.mark.parametrize(
     "raw, expected",
     [
-         
+
         ("FunkMonk", "FunkMonk"),
         ("Final Answer: FunkMonk", "FunkMonk"),
         ("The answer is 42", "42"),
