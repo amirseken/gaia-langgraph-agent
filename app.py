@@ -54,7 +54,7 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
 
     # 1. Instantiate Agent ( modify this part to create your agent)
     try:
-        agent = GaiaAgent()
+        agent = GaiaAgent(session_id=f"gaia-run-{time.strftime('%Y%m%d-%H%M')}")
     except Exception as e:
         print(f"Error instantiating agent: {e}")
         return f"Error initializing agent: {e}", None
@@ -96,7 +96,7 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
         try:
 
             file_path = download_task_file(task_id, item.get("file_name", ""))
-            submitted_answer = agent(question_text, file_path)
+            submitted_answer = agent(question_text, file_path, task_id)
             time.sleep(10)
             answers_payload.append({"task_id": task_id, "submitted_answer": submitted_answer})
             results_log.append({"Task ID": task_id, "Question": question_text, "Submitted Answer": submitted_answer})

@@ -15,4 +15,4 @@ print("QUESTION:", q["question"])
 print("FILE:", q.get("file_name") or "none")
 
 file_path = download_task_file(q["task_id"], q.get("file_name", ""))
-print("\nANSWER:", GaiaAgent()(q["question"], file_path))
+print("\nANSWER:", GaiaAgent(session_id="local-test")(q["question"], file_path, q["task_id"]))
