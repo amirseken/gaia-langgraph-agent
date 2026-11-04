@@ -11,6 +11,9 @@ hf_oauth: true
 # optional, default duration is 8 hours/480 minutes. Max duration is 30 days/43200 minutes.
 hf_oauth_expiration_minutes: 480
 ---
+# YAML
+
+![CI](https://github.com/amirseken/gaia-langgraph-agent/actions/workflows/ci.yml/badge.svg)
 
 # GAIA Agent — LangGraph
 
