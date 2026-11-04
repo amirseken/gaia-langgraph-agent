@@ -14,6 +14,13 @@ from tools import ALL_TOOLS, GEMINI_MODELS
 
 load_dotenv()
 
+# Tracing is optional: enabled only when Langfuse keys are set, so the app still runs without them.
+LANGFUSE_ENABLED = bool(os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"))
+if LANGFUSE_ENABLED:
+    from langfuse import get_client
+    from langfuse.langchain import CallbackHandler
+
+
 SYSTEM_PROMPT = """You are answering questions from the GAIA benchmark. Answers are graded by EXACT MATCH.
 
 How to work:
@@ -131,29 +138,47 @@ graph = builder.compile()
 
 
 # ---------------------------------------------------------------- public interface
-
 class GaiaAgent:
     """Same interface as the smolagents BasicAgent: agent(question, file_path) -> answer."""
 
-    def __call__(self, question: str, file_path: str | None = None) -> str:
+    def __init__(self, session_id: str | None = None):
+        # One session per evaluation run, so all 20 questions are grouped in Langfuse.
+        self.session_id = session_id
+
+    def _config(self, task_id: str | None = None) -> dict:
+        config = {"recursion_limit": 25, "run_name": "gaia-question"}
+        if LANGFUSE_ENABLED:
+            config["callbacks"] = [CallbackHandler()]
+            metadata = {"langfuse_tags": ["langgraph", "gaia"]}
+            if self.session_id:
+                metadata["langfuse_session_id"] = self.session_id
+            if task_id:
+                metadata["task_id"] = task_id
+            config["metadata"] = metadata
+        return config
+
+    def __call__(self, question: str, file_path: str | None = None, task_id: str | None = None) -> str:
         task = question
         if file_path:
             task += f"\n\nThe attached file is saved locally at: {file_path}"
         inputs = {"messages": [HumanMessage(content=task)], "question": question, "answer": ""}
+        config = self._config(task_id)
         state = None
         try:
-            # stream() yields the state after every step, so we keep the latest one
-            for state in graph.stream(inputs, config={"recursion_limit": 25}, stream_mode="values"):
+            for state in graph.stream(inputs, config=config, stream_mode="values"):
                 pass
             return state["answer"]
         except GraphRecursionError:
             print("  (step limit reached; forcing a best-guess answer)")
-            return self._best_guess(question, state)
+            return self._best_guess(question, state, config)
         except Exception as e:
             print(f"  (agent error: {e})")
             return ""
+        finally:
+            if LANGFUSE_ENABLED:
+                get_client().flush()  # send traces now; the Space may restart before background sending
 
-    def _best_guess(self, question: str, state) -> str:
+    def _best_guess(self, question: str, state, config: dict) -> str:
         if not state:
             return ""
         transcript = "\n\n".join(text_of(m)[:3000] for m in state["messages"][-12:] if text_of(m))
@@ -164,7 +189,8 @@ class GaiaAgent:
             f"QUESTION:\n{question}\n\nEVIDENCE:\n{transcript}"
         )
         try:
-            return clean_answer(text_of(answer_llm.invoke(prompt)))
+            callbacks = {"callbacks": config["callbacks"]} if "callbacks" in config else {}
+            return clean_answer(text_of(answer_llm.invoke(prompt, config=callbacks)))
         except Exception as e:
             print(f"  (best-guess failed: {e})")
             return ""
