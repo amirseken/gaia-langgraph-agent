@@ -1,0 +1,8 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.git/
+gaia_files/
+.pytest_cache/
+tests/
