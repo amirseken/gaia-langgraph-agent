@@ -13,3 +13,6 @@ huggingface_hub
 gradio[oauth]
 spaces
 langfuse
+fastapi
+uvicorn[standard]
+python-multipart
