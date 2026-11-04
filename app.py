@@ -1,11 +1,10 @@
 import os
-import gradio as gr
-import requests
-import inspect
 import time
+
+import gradio as gr
 import pandas as pd
+import requests
 from dotenv import load_dotenv
-import re
 
 try:
     import spaces
@@ -19,7 +18,7 @@ except ImportError:          # running locally: no ZeroGPU, use a no-op decorato
 def _zerogpu_placeholder():
     """Never called. ZeroGPU Spaces require at least one GPU-decorated function at startup.
     All model calls in this app go to the Gemini API, so no GPU is used."""
-    return None
+    return
 
 load_dotenv()
 
