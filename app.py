@@ -6,6 +6,9 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 
+from agent import GaiaAgent
+from utils import download_task_file
+
 try:
     import spaces
     gpu = spaces.GPU
@@ -22,16 +25,14 @@ def _zerogpu_placeholder():
 
 load_dotenv()
 
-from agent import GaiaAgent
-from utils import download_task_file
 
 # (Keep Constants as is)
 # --- Constants ---
 DEFAULT_API_URL = "https://agents-course-unit4-scoring.hf.space"
 
 
- 
-   
+
+
 def run_and_submit_all( profile: gr.OAuthProfile | None):
     """
     Fetches all questions, runs the BasicAgent on them, submits all answers,
@@ -107,7 +108,7 @@ def run_and_submit_all( profile: gr.OAuthProfile | None):
         print("Agent did not produce any answers to submit.")
         return "Agent did not produce any answers to submit.", pd.DataFrame(results_log)
 
-    # 4. Prepare Submission 
+    # 4. Prepare Submission
     submission_data = {"username": username.strip(), "agent_code": agent_code, "answers": answers_payload}
     status_update = f"Agent finished. Submitting {len(answers_payload)} answers for user '{username}'..."
     print(status_update)
@@ -197,14 +198,14 @@ if __name__ == "__main__":
         print(f"✅ SPACE_HOST found: {space_host_startup}")
         print(f"   Runtime URL should be: https://{space_host_startup}.hf.space")
     else:
-        print("ℹ️  SPACE_HOST environment variable not found (running locally?).")
+        print("INFO: SPACE_HOST environment variable not found (running locally?).")
 
     if space_id_startup: # Print repo URLs if SPACE_ID is found
         print(f"✅ SPACE_ID found: {space_id_startup}")
         print(f"   Repo URL: https://huggingface.co/spaces/{space_id_startup}")
         print(f"   Repo Tree URL: https://huggingface.co/spaces/{space_id_startup}/tree/main")
     else:
-        print("ℹ️  SPACE_ID environment variable not found (running locally?). Repo URL cannot be determined.")
+        print("INFO: SPACE_ID environment variable not found (running locally?). Repo URL cannot be determined.")
 
     print("-"*(60 + len(" App Starting ")) + "\n")
 

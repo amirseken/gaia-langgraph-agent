@@ -1,10 +1,11 @@
 import time
+from typing import ClassVar
 
 import pandas as pd
 import pytest
+import requests
 
 import tools
-
 
 # ---------------------------------------------------------------- helpers
 
@@ -21,7 +22,7 @@ class FakeResponse:
 
     def raise_for_status(self):
         if self.status_code >= 400:
-            raise Exception(f"{self.status_code} Client Error")
+            raise requests.HTTPError(f"{self.status_code} Client Error")
 
 
 @pytest.fixture(autouse=True)
@@ -116,7 +117,7 @@ def test_visit_webpage_returns_error_instead_of_raising(monkeypatch):
 # ---------------------------------------------------------------- web_search (mocked)
 
 class FakeDDGS:
-    results = []
+    results: ClassVar[list[dict]] = []
 
     def text(self, query, max_results=8):
         return self.results
@@ -135,7 +136,7 @@ def test_web_search_handles_rate_limiting(monkeypatch):
 
     class FailingDDGS:
         def text(self, query, max_results=8):
-            raise Exception("Ratelimit")
+            raise RuntimeError("Ratelimit")
 
     monkeypatch.setattr(ddgs, "DDGS", FailingDDGS)
     output = tools.web_search.invoke({"query": "test"})
